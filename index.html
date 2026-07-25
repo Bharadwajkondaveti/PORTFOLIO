@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bharadwaj Kondaveti — Motion &amp; AI Video Designer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;900&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b0b0d;
+    --bg-panel:#17171b;
+    --bg-panel-2:#141418;
+    --text:#edeae2;
+    --text-dim:#8c887f;
+    --accent:#e8a33d;
+    --accent-dim:#6b4a1e;
+    --teal:#16302e;
+    --line: rgba(237,234,226,0.1);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:
+      radial-gradient(ellipse 900px 600px at 10% -10%, rgba(232,163,61,0.14), transparent 60%),
+      radial-gradient(ellipse 800px 700px at 95% 15%, rgba(106,90,205,0.12), transparent 60%),
+      radial-gradient(ellipse 900px 800px at 20% 80%, rgba(47,143,122,0.10), transparent 60%),
+      var(--bg);
+    color:var(--text);
+    font-family:'IBM Plex Sans', sans-serif;
+    overflow-x:hidden;
+  }
+  ::selection{background:var(--accent);color:#0b0b0d;}
+
+  .grain{
+    position:fixed; inset:0; pointer-events:none; z-index:999;
+    opacity:0.05; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .scrubber{ position:fixed; top:0; left:0; right:0; height:3px; background:rgba(237,234,226,0.08); z-index:1000; }
+  .scrubber-fill{ height:100%; width:0%; background:var(--accent); box-shadow:0 0 8px var(--accent); position:relative; transition:width 0.05s linear; }
+  .scrubber-knob{ position:absolute; right:-5px; top:50%; transform:translateY(-50%); width:10px; height:10px; border-radius:50%; background:var(--accent); box-shadow:0 0 10px var(--accent); }
+  .timecode-hud{ position:fixed; top:14px; right:20px; z-index:1000; font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.05em; color:var(--text-dim); background:rgba(11,11,13,0.6); padding:4px 10px; border:1px solid var(--line); border-radius:2px; backdrop-filter:blur(4px); }
+  .timecode-hud span{color:var(--accent);}
+  nav{ position:fixed; top:14px; left:20px; z-index:1000; font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.08em; color:var(--text-dim); }
+
+  section{padding:140px 8vw; position:relative;}
+  .container{max-width:1200px; margin:0 auto;}
+
+  .hero{ min-height:100vh; display:flex; flex-direction:column; justify-content:center; padding:0 8vw; position:relative; }
+  .hero::before{
+    content:''; position:absolute; top:50%; left:50%; width:60vw; height:60vw; max-width:900px; max-height:900px;
+    background:radial-gradient(circle, rgba(232,163,61,0.10) 0%, rgba(106,90,205,0.06) 45%, transparent 70%);
+    pointer-events:none; z-index:0; animation:heroGlowPulse 7s ease-in-out infinite;
+  }
+  @keyframes heroGlowPulse{0%{transform:translate(-50%,-50%) scale(1);}50%{transform:translate(-50%,-50%) scale(1.4);}100%{transform:translate(-50%,-50%) scale(1);}}
+  .hero > *{position:relative; z-index:1;}
+  .dots-canvas{ position:absolute; inset:0; z-index:0 !important; width:100%; height:100%; transition:opacity 0.3s ease; }
+  .hero-eyebrow{
+    font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:0.15em; color:var(--accent); text-transform:uppercase; margin-bottom:24px;
+    display:flex; align-items:center; gap:10px;
+    opacity:0; transform:translateY(16px); animation:heroIn 0.7s cubic-bezier(.16,1,.3,1) 0.05s forwards;
+  }
+  .hero-eyebrow::before{ content:''; width:8px; height:8px; background:var(--accent); border-radius:50%; box-shadow:0 0 10px var(--accent); animation:pulse 2s infinite; }
+  @keyframes pulse{0%,100%{opacity:1;} 50%{opacity:0.3;}}
+  .hero h1{
+    font-family:'Big Shoulders Display', sans-serif; font-weight:900; font-size:clamp(4.5rem, 14vw, 11rem);
+    line-height:0.85; letter-spacing:-0.01em; text-transform:uppercase; color:var(--text);
+    opacity:0; transform:translateY(30px); animation:heroIn 0.9s cubic-bezier(.16,1,.3,1) 0.15s forwards;
+  }
+  .hero-surname{ display:block; margin-top:0.1em; color:var(--accent); font-size:0.55em; -webkit-text-stroke:1px var(--accent); }
+  .hero-sub{
+    font-family:'IBM Plex Mono', monospace; font-size:clamp(0.9rem, 1.5vw, 1.05rem); color:var(--text-dim); margin-top:28px; max-width:640px; line-height:1.7;
+    opacity:0; transform:translateY(20px); animation:heroIn 0.9s cubic-bezier(.16,1,.3,1) 0.35s forwards;
+  }
+  @keyframes heroIn{to{opacity:1; transform:translateY(0);}}
+  .hero-sub b{color:var(--text); font-weight:500;}
+  .scroll-cue{ position:fixed; bottom:40px; left:8vw; z-index:400; font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--text-dim); display:flex; align-items:center; gap:10px; transition:opacity 0.5s ease; opacity:1; }
+  .scroll-cue .bar{width:1px; height:36px; background:var(--text-dim); position:relative; overflow:hidden;}
+  .scroll-cue .bar::after{ content:''; position:absolute; top:0; left:0; width:100%; height:40%; background:var(--accent); animation:scrolldown 1.8s infinite; }
+  @keyframes scrolldown{0%{top:-40%;} 100%{top:100%;}}
+
+  .section-label{ font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:0.15em; color:var(--accent); text-transform:uppercase; margin-bottom:16px; }
+  .section-title{ font-family:'Big Shoulders Display', sans-serif; font-weight:700; font-size:clamp(2.2rem, 5vw, 3.8rem); text-transform:uppercase; line-height:0.95; margin-bottom:60px; max-width:800px; }
+
+  .reveal{ opacity:0; transform:translateY(28px); transition:opacity 0.7s cubic-bezier(.16,1,.3,1), transform 0.7s cubic-bezier(.16,1,.3,1); }
+  .reveal.is-visible{opacity:1; transform:translateY(0);}
+  @media (prefers-reduced-motion: reduce){ .reveal{opacity:1; transform:none; transition:none;} }
+
+  .work-grid{display:flex; flex-direction:column; gap:2px;}
+  .frame{ display:grid; grid-template-columns:100px 180px 1fr 200px; gap:28px; align-items:center; padding:32px 0; border-top:1px solid var(--line); transition:background 0.3s ease; cursor:pointer; }
+  .frame:last-child{border-bottom:1px solid var(--line);}
+  .frame:hover{background:rgba(232,163,61,0.04);}
+  .frame-tc{ font-family:'IBM Plex Mono', monospace; font-size:13px; color:var(--text-dim); }
+  .frame-thumb{
+    aspect-ratio:16/9; border-radius:3px; position:relative; overflow:hidden; filter:saturate(0.85);
+    transition:transform 0.35s ease, filter 0.35s ease, box-shadow 0.35s ease;
+    background-size:cover; background-position:center; background-color:#1a1a1e;
+    display:flex; align-items:center; justify-content:center; cursor:pointer; will-change:transform;
+  }
+  .frame:hover .frame-thumb{filter:saturate(1.1); box-shadow:0 8px 24px rgba(0,0,0,0.4);}
+  .frame-thumb::after{ content:''; position:absolute; inset:0; background:rgba(0,0,0,0.15); transition:background 0.3s ease; }
+  .frame:hover .frame-thumb::after{background:rgba(0,0,0,0.3);}
+  .play-badge{
+    position:relative; z-index:1; width:46px; height:46px; border-radius:50%;
+    background:rgba(11,11,13,0.55); border:1px solid rgba(237,234,226,0.4);
+    display:flex; align-items:center; justify-content:center; color:var(--text); font-size:14px; padding-left:3px;
+    transition:all 0.3s ease;
+  }
+  .frame:hover .play-badge{background:var(--accent); border-color:var(--accent); color:#0b0b0d; transform:scale(1.15);}
+  .frame-thumb:active .play-badge{transform:scale(0.92);}
+  .frame-main h3{ font-family:'Big Shoulders Display', sans-serif; font-weight:700; font-size:clamp(1.5rem, 3vw, 2.3rem); text-transform:uppercase; margin-bottom:8px; transition:color 0.3s ease; }
+  .frame:hover .frame-main h3{color:var(--accent);}
+  .frame-main p{color:var(--text-dim); font-size:0.9rem; max-width:520px;}
+  .frame-tags{ display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; }
+  .tag{ font-family:'IBM Plex Mono', monospace; font-size:10px; letter-spacing:0.05em; color:var(--text-dim); border:1px solid var(--line); padding:4px 10px; border-radius:20px; text-transform:uppercase; white-space:nowrap; transition:border-color 0.25s ease, color 0.25s ease; }
+  .frame:hover .tag{border-color:rgba(232,163,61,0.35); color:var(--text);}
+  @media (max-width:800px){
+    .frame{grid-template-columns:1fr; grid-template-areas:"thumb" "tc" "main" "tags"; gap:12px;}
+    .frame-thumb{grid-area:thumb;} .frame-tc{grid-area:tc;} .frame-main{grid-area:main;}
+    .frame-tags{grid-area:tags; justify-content:flex-start; margin-top:4px;}
+  }
+
+  .marquee{ overflow:hidden; width:100%; margin-top:50px; -webkit-mask-image:linear-gradient(to right, transparent, black 6%, black 94%, transparent); mask-image:linear-gradient(to right, transparent, black 6%, black 94%, transparent); }
+  .marquee-track{ display:flex; gap:20px; width:max-content; animation:scrollX 46s linear infinite; }
+  .marquee:hover .marquee-track{animation-play-state:paused;}
+  .marquee-track.reverse{animation-direction:reverse;}
+  .marquee + .marquee{margin-top:20px;}
+  .design-card{ width:260px; aspect-ratio:4/5; border-radius:4px; flex-shrink:0; position:relative; overflow:hidden; display:flex; align-items:flex-end; border:1px solid var(--line); background:linear-gradient(155deg, #1a1a1e, #26201a); transition:transform 0.3s ease; }
+  .design-card:hover{transform:translateY(-6px);}
+  .design-card img{width:100%; height:100%; object-fit:cover; position:absolute; inset:0; transition:transform 0.5s ease;}
+  .design-card:hover img{transform:scale(1.06);}
+  .design-card.wide{width:380px; aspect-ratio:16/9;}
+  .design-card span{ position:relative; z-index:1; padding:16px; font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--text); background:linear-gradient(to top, rgba(0,0,0,0.55), transparent); width:100%; }
+  @keyframes scrollX{from{transform:translateX(0);} to{transform:translateX(-50%);}}
+  @media (prefers-reduced-motion: reduce){ .marquee-track{animation:none; overflow-x:auto;} }
+
+  .kit{display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line); border:1px solid var(--line);}
+  .kit-cat{ background:linear-gradient(160deg, rgba(232,163,61,0.05), transparent 60%), var(--bg-panel-2); padding:36px; transition:background 0.35s ease; }
+  .kit-cat:hover{ background:linear-gradient(160deg, rgba(232,163,61,0.11), transparent 60%), var(--bg-panel-2); }
+  .kit-cat h4{ font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.1em; color:var(--accent); text-transform:uppercase; margin-bottom:20px; }
+  .kit-cat ul{list-style:none;}
+  .kit-cat li{ font-family:'Big Shoulders Display', sans-serif; font-weight:500; font-size:1.3rem; padding:8px 0; border-top:1px solid var(--line); transition:color 0.25s ease, padding-left 0.25s ease; }
+  .kit-cat li:hover{color:var(--accent); padding-left:6px;}
+  .kit-cat li:first-of-type{border-top:none;}
+  @media (max-width:800px){.kit{grid-template-columns:1fr;}}
+
+  .about{display:grid; grid-template-columns:1fr 1.2fr; gap:80px; align-items:start;}
+  .about-visual{ aspect-ratio:3/4; border-radius:4px; display:flex; align-items:flex-start; padding:24px; font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--text-dim); position:relative; overflow:hidden; }
+  .about-visual img{ width:88%; height:88%; object-fit:contain; object-position:top center; position:absolute; left:50%; top:0; transform:translateX(-50%); filter:saturate(0.95) contrast(1.05) drop-shadow(0 20px 40px rgba(0,0,0,0.45)); }
+  .visual-fallback{display:none; position:relative; z-index:1;}
+  .about p{color:var(--text-dim); line-height:1.9; font-size:1.05rem; margin-bottom:20px;}
+  .about strong{color:var(--text); font-weight:500;}
+  .credentials{ display:flex; gap:40px; margin-top:36px; padding-top:28px; border-top:1px solid var(--line); align-items:flex-end; }
+  .cred-item .num{font-family:'Big Shoulders Display'; font-size:2.4rem; font-weight:700; color:var(--accent); line-height:1;}
+  .cred-item .lbl{font-family:'IBM Plex Mono', monospace; font-size:10px; color:var(--text-dim); text-transform:uppercase; margin-top:6px;}
+  @media (max-width:800px){.about{grid-template-columns:1fr;} .about-visual{aspect-ratio:16/9;}}
+
+  #contact{position:relative; padding-top:70px;}
+  #about{padding-bottom:70px;}
+  .spotlight{ position:absolute; width:520px; height:520px; border-radius:50%; left:0; top:0; transform:translate(-50%,-50%); background:radial-gradient(circle, rgba(232,163,61,0.22), rgba(232,163,61,0.05) 40%, transparent 65%); filter:blur(18px); pointer-events:none; z-index:0; opacity:0; transition:opacity 0.4s ease; }
+  .credits{text-align:center; position:relative; z-index:1;}
+  .credits .section-label{justify-content:center; display:flex;}
+  .credits h2{ font-family:'Big Shoulders Display', sans-serif; font-weight:900; font-size:clamp(2.8rem, 8vw, 6rem); text-transform:uppercase; line-height:0.95; margin:0 auto 40px; max-width:900px; }
+  .credit-links{display:flex; flex-wrap:wrap; justify-content:center; gap:14px; margin-top:20px;}
+  .credit-links a{ font-family:'IBM Plex Mono', monospace; font-size:13px; color:var(--text); border:1px solid var(--line); padding:14px 24px; border-radius:30px; text-decoration:none; transition:all 0.25s ease; display:inline-flex; align-items:center; gap:10px; }
+  .credit-links a:hover{border-color:var(--accent); color:var(--accent); background:rgba(232,163,61,0.06); transform:translateY(-2px);}
+  .resume-row{margin-top:20px;}
+  .resume-btn{ font-family:'IBM Plex Mono', monospace; font-size:13px; font-weight:600; color:#0b0b0d; background:var(--accent); border:1px solid var(--accent); padding:14px 30px; border-radius:30px; text-decoration:none; display:inline-flex; align-items:center; gap:10px; transition:all 0.25s ease; }
+  .resume-btn:hover{background:#f5b955; border-color:#f5b955; box-shadow:0 4px 20px rgba(232,163,61,0.35); transform:translateY(-2px);}
+  .contact-note{ max-width:560px; margin:36px auto 0; font-size:0.85rem; line-height:1.7; color:var(--text-dim); }
+  a:focus-visible, .frame:focus-visible{outline:2px solid var(--accent); outline-offset:3px;}
+
+  footer{ padding:40px 8vw; display:flex; justify-content:space-between; align-items:center; font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--text-dim); border-top:1px solid var(--line); }
+
+  @media (prefers-reduced-motion: reduce){ .hero-eyebrow::before, .scroll-cue .bar::after, .hero::before{animation:none;} html{scroll-behavior:auto;} }
+  @media (max-width:480px){ nav{font-size:9px; letter-spacing:0.04em;} .timecode-hud{font-size:9px; padding:3px 7px;} }
+
+  /* ===== CUSTOM CURSOR ===== */
+  @media (hover:hover) and (pointer:fine){
+    html{cursor:none;}
+    a, .frame, .frame-thumb, button, [role="button"], .chatbot-toggle{cursor:none;}
+  }
+  .cursor-glow{ position:fixed; top:0; left:0; width:420px; height:420px; border-radius:50%; pointer-events:none; z-index:9998; background:radial-gradient(circle, rgba(232,163,61,0.16) 0%, rgba(106,90,205,0.08) 40%, transparent 70%); transform:translate(-50%,-50%); mix-blend-mode:screen; filter:blur(2px); will-change:transform; }
+  .cursor-ring{ position:fixed; top:0; left:0; width:26px; height:26px; border:1px solid rgba(232,163,61,0.85); border-radius:50%; pointer-events:none; z-index:9999; transform:translate(-50%,-50%); box-shadow:0 0 12px rgba(232,163,61,0.5); transition:width 0.25s ease, height 0.25s ease, border-color 0.25s ease, background 0.25s ease; will-change:transform; }
+  .cursor-ring::after{ content:''; position:absolute; top:50%; left:50%; width:4px; height:4px; background:var(--accent); border-radius:50%; transform:translate(-50%,-50%); box-shadow:0 0 6px var(--accent); }
+  .cursor-ring.is-active{ width:56px; height:56px; background:rgba(232,163,61,0.08); border-color:rgba(232,163,61,1); }
+  .cursor-dot{ position:fixed; top:0; left:0; width:5px; height:5px; border-radius:50%; pointer-events:none; z-index:9997; background:var(--accent); opacity:0.55; will-change:transform, opacity; }
+  @media (max-width:900px), (hover:none){
+    .cursor-glow, .cursor-ring, .cursor-dot{display:none;}
+    html{cursor:auto;}
+    a, .frame, .frame-thumb, button, [role="button"]{cursor:pointer;}
+  }
+
+  /* ===== CHATBOT ===== */
+  .chatbot-toggle{
+    position:fixed; bottom:28px; right:28px; z-index:9500; width:60px; height:60px; border-radius:50%;
+    background:linear-gradient(155deg, #2a2110, var(--accent)); border:1px solid rgba(232,163,61,0.6);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 6px 24px rgba(232,163,61,0.28), 0 2px 8px rgba(0,0,0,0.4);
+    cursor:pointer; transition:transform 0.3s cubic-bezier(.34,1.56,.64,1), box-shadow 0.3s ease;
+    animation:botFloat 3.4s ease-in-out infinite;
+  }
+  .chatbot-toggle:hover{transform:scale(1.08); box-shadow:0 8px 30px rgba(232,163,61,0.4);}
+  .chatbot-toggle svg{width:28px; height:28px;}
+  @keyframes botFloat{0%,100%{transform:translateY(0);} 50%{transform:translateY(-6px);}}
+  .chatbot-toggle .ping{ position:absolute; top:-2px; right:-2px; width:14px; height:14px; border-radius:50%; background:#3ddc84; border:2px solid var(--bg); }
+  .chatbot-toggle .ping::after{ content:''; position:absolute; inset:0; border-radius:50%; background:#3ddc84; animation:pingRing 1.8s ease-out infinite; }
+  @keyframes pingRing{0%{opacity:0.7; transform:scale(1);} 100%{opacity:0; transform:scale(2.4);}}
+
+  .chatbot-panel{
+    position:fixed; bottom:104px; right:28px; z-index:9500; width:380px; max-width:calc(100vw - 40px);
+    height:520px; max-height:calc(100vh - 150px); background:var(--bg-panel); border:1px solid var(--line);
+    border-radius:16px; box-shadow:0 20px 60px rgba(0,0,0,0.55); display:flex; flex-direction:column; overflow:hidden;
+    transform:translateY(16px) scale(0.97); opacity:0; pointer-events:none;
+    transition:transform 0.3s cubic-bezier(.16,1,.3,1), opacity 0.25s ease;
+  }
+  .chatbot-panel.is-open{ transform:translateY(0) scale(1); opacity:1; pointer-events:auto; }
+  .chatbot-header{ display:flex; align-items:center; gap:12px; padding:16px 18px; background:linear-gradient(160deg, rgba(232,163,61,0.09), transparent 70%), var(--bg-panel-2); border-bottom:1px solid var(--line); }
+  .chatbot-avatar{ width:38px; height:38px; border-radius:50%; background:linear-gradient(155deg,#2a2110,var(--accent)); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .chatbot-avatar svg{width:20px; height:20px;}
+  .chatbot-name{font-family:'Big Shoulders Display', sans-serif; font-weight:700; font-size:1rem; text-transform:uppercase; letter-spacing:0.02em;}
+  .chatbot-status{font-family:'IBM Plex Mono', monospace; font-size:10px; color:#3ddc84; display:flex; align-items:center; gap:5px;}
+  .chatbot-status::before{content:''; width:6px; height:6px; border-radius:50%; background:#3ddc84; box-shadow:0 0 6px #3ddc84;}
+  .chatbot-close{ margin-left:auto; background:none; border:none; color:var(--text-dim); font-size:16px; cursor:pointer; padding:6px; line-height:1; transition:color 0.2s ease; }
+  .chatbot-close:hover{color:var(--accent);}
+  .chatbot-messages{ flex:1; overflow-y:auto; padding:18px; display:flex; flex-direction:column; gap:12px; scrollbar-width:thin; scrollbar-color:var(--accent-dim) transparent; }
+  .chatbot-messages::-webkit-scrollbar{width:5px;}
+  .chatbot-messages::-webkit-scrollbar-thumb{background:var(--accent-dim); border-radius:4px;}
+  .chat-msg{ max-width:82%; padding:10px 14px; border-radius:14px; font-size:0.86rem; line-height:1.55; animation:msgIn 0.35s cubic-bezier(.16,1,.3,1); }
+  @keyframes msgIn{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);}}
+  .chat-msg.bot{ background:var(--bg-panel-2); border:1px solid var(--line); border-bottom-left-radius:4px; align-self:flex-start; color:var(--text); }
+  .chat-msg.user{ background:var(--accent); color:#0b0b0d; font-weight:500; border-bottom-right-radius:4px; align-self:flex-end; }
+  .chat-msg a{color:inherit; text-decoration:underline;}
+  .chat-suggestions{display:flex; flex-wrap:wrap; gap:6px; margin-top:2px;}
+  .chat-suggestion-btn{ font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:var(--accent); background:rgba(232,163,61,0.08); border:1px solid rgba(232,163,61,0.3); padding:6px 10px; border-radius:20px; cursor:pointer; transition:all 0.2s ease; }
+  .chat-suggestion-btn:hover{background:rgba(232,163,61,0.18); border-color:var(--accent);}
+  .typing-dots{display:flex; gap:4px; padding:4px 2px;}
+  .typing-dots span{ width:6px; height:6px; border-radius:50%; background:var(--text-dim); animation:typingBounce 1.2s infinite; }
+  .typing-dots span:nth-child(2){animation-delay:0.15s;}
+  .typing-dots span:nth-child(3){animation-delay:0.3s;}
+  @keyframes typingBounce{0%,60%,100%{transform:translateY(0); opacity:0.5;} 30%{transform:translateY(-4px); opacity:1;}}
+  .chatbot-input-row{ display:flex; gap:8px; padding:14px; border-top:1px solid var(--line); background:var(--bg-panel-2); }
+  .chatbot-input-row input{ flex:1; background:var(--bg); border:1px solid var(--line); border-radius:24px; padding:11px 16px; color:var(--text); font-family:'IBM Plex Sans', sans-serif; font-size:0.85rem; outline:none; transition:border-color 0.2s ease; }
+  .chatbot-input-row input:focus{border-color:var(--accent);}
+  .chatbot-input-row button{ width:40px; height:40px; border-radius:50%; border:none; flex-shrink:0; background:var(--accent); color:#0b0b0d; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:transform 0.2s ease, background 0.2s ease; }
+  .chatbot-input-row button:hover{background:#f5b955; transform:scale(1.06);}
+  .chatbot-input-row button:active{transform:scale(0.94);}
+  @media (max-width:480px){ .chatbot-panel{right:12px; left:12px; width:auto; bottom:96px;} .chatbot-toggle{right:16px; bottom:16px;} }
+</style>
+</head>
+<body>
+
+<div class="grain"></div>
+<div class="cursor-glow" id="cursorGlow"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+<div class="scrubber"><div class="scrubber-fill" id="scrubFill"><div class="scrubber-knob"></div></div></div>
+<div class="timecode-hud"><span id="tcOut">00:00:00</span> / 03:42:00</div>
+<nav>BHARADWAJ KONDAVETI</nav>
+
+<section class="hero">
+  <canvas id="dotsCanvas" class="dots-canvas"></canvas>
+  <div class="hero-eyebrow">Now recording — Hyderabad, IN</div>
+  <h1>Bharadwaj<br><span class="hero-surname">Kondaveti</span></h1>
+  <p class="hero-sub">
+    <b>Visual designer</b> working across motion graphics, AI-generated video, and illustration.
+    BFA-trained, studio-tested — I direct footage through <b>Firefly, Higgsfield, Veo, etc.</b> as often as I craft and edit it in <b>After Effects and Premiere Pro</b>.
+  </p>
+  <div class="scroll-cue"><div class="bar"></div> SCROLL</div>
+</section>
+
+<section id="work">
+  <div class="container">
+    <div class="section-label reveal">Selected Work</div>
+    <h2 class="section-title reveal">Cuts from the reel</h2>
+    <div class="work-grid">
+
+      <div class="frame reveal" tabindex="0">
+        <div class="frame-tc">00:01:07</div>
+        <div class="frame-thumb" style="background-image:url('CYBAGE.jpg');" onclick="playVideo('VENH8fOv8us')" role="button" aria-label="Watch CYBAGE — Creative Services Showreel on YouTube">
+          <div class="play-badge">▶</div>
+        </div>
+        <div class="frame-main">
+          <h3>CYBAGE — Creative Services Showreel</h3>
+          <p>A full creative showreel spanning 2D, 3D, illustration, and motion — flyers, posters, decks, and everything in between.</p>
+        </div>
+        <div class="frame-tags">
+          <span class="tag">Illustrator</span><span class="tag">Photoshop</span><span class="tag">After Effects</span><span class="tag">Premiere Pro</span>
+        </div>
+      </div>
+
+      <div class="frame reveal" tabindex="0">
+        <div class="frame-tc">00:00:43</div>
+        <div class="frame-thumb" style="background-image:url('TATA NEXON.jpg');" onclick="playVideo('YZJcXf4QAXk')" role="button" aria-label="Watch TATA Nexon — AI Video Ad on YouTube">
+          <div class="play-badge">▶</div>
+        </div>
+        <div class="frame-main">
+          <h3>TATA Nexon — AI Video Ad</h3>
+          <p>A fully AI-generated automotive ad, directed and composited entirely through generative video tools.</p>
+        </div>
+        <div class="frame-tags">
+          <span class="tag">Firefly</span><span class="tag">Veo</span><span class="tag">After Effects</span>
+        </div>
+      </div>
+
+      <div class="frame reveal" tabindex="0">
+        <div class="frame-tc">00:03:42</div>
+        <div class="frame-thumb" style="background-image:url('WPP.jpg');" onclick="playVideo('GA5M4lSt9DE')" role="button" aria-label="Watch WPP — Invoice Processing Sales Kit on YouTube">
+          <div class="play-badge">▶</div>
+        </div>
+        <div class="frame-main">
+          <h3>WPP — Invoice Processing Sales Kit</h3>
+          <p>Illustrated visuals and motion graphics built to bring an enterprise sales kit to life.</p>
+        </div>
+        <div class="frame-tags">
+          <span class="tag">Illustrator</span><span class="tag">After Effects</span>
+        </div>
+      </div>
+
+      <div class="frame reveal" tabindex="0">
+        <div class="frame-tc">00:00:43</div>
+        <div class="frame-thumb" style="background-image:url('UX SHOWREEL.jpg');" onclick="playVideo('g3SKQAvdx5A')" role="button" aria-label="Watch UX Showreel — UX Capabilities Video on YouTube">
+          <div class="play-badge">▶</div>
+        </div>
+        <div class="frame-main">
+          <h3>UX Showreel — UX Capabilities Video</h3>
+          <p>A showreel of UX design work, mapped through workflow visuals and edited for a clear, guided narrative.</p>
+        </div>
+        <div class="frame-tags">
+          <span class="tag">Illustrator</span><span class="tag">Photoshop</span><span class="tag">After Effects</span><span class="tag">Premiere Pro</span>
+        </div>
+      </div>
+
+      <div class="frame reveal" tabindex="0">
+        <div class="frame-tc">00:00:39</div>
+        <div class="frame-thumb" style="background-image:url('Toppr.jpg');" onclick="playVideo('sZ7KnTNx8PA')" role="button" aria-label="Watch Toppr School OS on YouTube">
+          <div class="play-badge">▶</div>
+        </div>
+        <div class="frame-main">
+          <h3>Toppr School OS</h3>
+          <p>Custom illustrations brought to life in After Effects, cut together with smooth, considered transitions.</p>
+        </div>
+        <div class="frame-tags">
+          <span class="tag">Illustrator</span><span class="tag">After Effects</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<section id="static" style="padding-bottom:40px;">
+  <div class="container">
+    <div class="section-label reveal">Static Designs</div>
+    <h2 class="section-title reveal">Frames that don't move</h2>
+  </div>
+  <div class="marquee">
+    <div class="marquee-track">
+      <div class="design-card"><img src="Maharashtra Tourism 3D.jpg" alt="Maharashtra Tourism 3D" onerror="imgFallback(this)"><span>Maharashtra Tourism 3D</span></div>
+      <div class="design-card"><img src="Chicken KFC.jpg" alt="Chicken KFC" onerror="imgFallback(this)"><span>Chicken KFC</span></div>
+      <div class="design-card"><img src="Delivery.jpg" alt="Delivery" onerror="imgFallback(this)"><span>Delivery</span></div>
+      <div class="design-card"><img src="Night Party.jpg" alt="Night Party" onerror="imgFallback(this)"><span>Night Party</span></div>
+      <div class="design-card"><img src="Magic Event.jpg" alt="Magic Event" onerror="imgFallback(this)"><span>Magic Event</span></div>
+      <div class="design-card"><img src="Cricket League.jpg" alt="Cricket League" onerror="imgFallback(this)"><span>Cricket League</span></div>
+      <div class="design-card"><img src="Maharashtra Tourism 3D.jpg" alt="Maharashtra Tourism 3D" onerror="imgFallback(this)"><span>Maharashtra Tourism 3D</span></div>
+      <div class="design-card"><img src="Chicken KFC.jpg" alt="Chicken KFC" onerror="imgFallback(this)"><span>Chicken KFC</span></div>
+      <div class="design-card"><img src="Delivery.jpg" alt="Delivery" onerror="imgFallback(this)"><span>Delivery</span></div>
+      <div class="design-card"><img src="Night Party.jpg" alt="Night Party" onerror="imgFallback(this)"><span>Night Party</span></div>
+      <div class="design-card"><img src="Magic Event.jpg" alt="Magic Event" onerror="imgFallback(this)"><span>Magic Event</span></div>
+      <div class="design-card"><img src="Cricket League.jpg" alt="Cricket League" onerror="imgFallback(this)"><span>Cricket League</span></div>
+    </div>
+  </div>
+
+  <div class="marquee">
+    <div class="marquee-track reverse">
+      <div class="design-card wide"><img src="Build your Brand.jpg" alt="Build your Brand" onerror="imgFallback(this)"><span>Build your Brand</span></div>
+      <div class="design-card wide"><img src="AI- Generated.jpg" alt="AI- Generated" onerror="imgFallback(this)"><span>AI- Generated</span></div>
+      <div class="design-card wide"><img src="AI is taking off.jpg" alt="AI is taking off" onerror="imgFallback(this)"><span>AI is taking off</span></div>
+      <div class="design-card wide"><img src="Volt.jpg" alt="Volt" onerror="imgFallback(this)"><span>Volt</span></div>
+      <div class="design-card wide"><img src="Gen-AI.jpg" alt="Gen-AI" onerror="imgFallback(this)"><span>Gen-AI</span></div>
+      <div class="design-card wide"><img src="VFX space.jpg" alt="VFX space" onerror="imgFallback(this)"><span>VFX space</span></div>
+      <div class="design-card wide"><img src="Build your Brand.jpg" alt="Build your Brand" onerror="imgFallback(this)"><span>Build your Brand</span></div>
+      <div class="design-card wide"><img src="AI- Generated.jpg" alt="AI- Generated" onerror="imgFallback(this)"><span>AI- Generated</span></div>
+      <div class="design-card wide"><img src="AI is taking off.jpg" alt="AI is taking off" onerror="imgFallback(this)"><span>AI is taking off</span></div>
+      <div class="design-card wide"><img src="Volt.jpg" alt="Volt" onerror="imgFallback(this)"><span>Volt</span></div>
+      <div class="design-card wide"><img src="Gen-AI.jpg" alt="Gen-AI" onerror="imgFallback(this)"><span>Gen-AI</span></div>
+      <div class="design-card wide"><img src="VFX space.jpg" alt="VFX space" onerror="imgFallback(this)"><span>VFX space</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="kit" style="padding-top:80px;">
+  <div class="container">
+    <div class="section-label reveal">Call Sheet</div>
+    <h2 class="section-title reveal">Working kit</h2>
+    <div class="kit">
+      <div class="kit-cat reveal">
+        <h4>Design &amp; Illustration</h4>
+        <ul><li>Illustrator</li><li>Photoshop</li><li>Figma</li><li>Canva</li></ul>
+      </div>
+      <div class="kit-cat reveal">
+        <h4>Motion &amp; 3D</h4>
+        <ul><li>After Effects</li><li>Premiere Pro</li><li>Blender</li></ul>
+      </div>
+      <div class="kit-cat reveal">
+        <h4>AI Video Generation</h4>
+        <ul><li>Firefly</li><li>Higgsfield</li><li>Veo</li></ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="about">
+  <div class="container about">
+    <div class="about-visual reveal">
+      <img src="profile.png" alt="Bharadwaj portrait"
+           onerror="this.style.display='none'; this.parentElement.querySelector('.visual-fallback').style.display='flex';">
+      <span class="visual-fallback">EST. — BFA GRADUATE</span>
+    </div>
+    <div class="reveal">
+      <div class="section-label">About</div>
+      <h2 class="section-title" style="margin-bottom:32px;">Behind the camera</h2>
+      <p>I'm a <strong>Senior Visual Designer</strong> based in Hyderabad, working at the intersection of traditional motion design and AI-driven video production. I hold a <strong>Bachelor of Fine Arts</strong> and have spent my career moving between brand identity, illustration, and motion. I'm a continuous learner at heart — always curious to explore new tools and techniques that push my craft forward.</p>
+      <div class="credentials">
+        <div class="cred-item"><div class="num">BFA</div><div class="lbl">Fine Arts</div></div>
+        <div class="cred-item"><div class="num" style="font-size:2.1rem; letter-spacing:0.01em;">AI+VFX</div><div class="lbl">Core practice</div></div>
+        <div class="cred-item"><div class="num">HYD</div><div class="lbl">Based in</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="contact">
+  <div class="spotlight" id="spotlight"></div>
+  <div class="container credits">
+    <div class="section-label reveal">Roll Credits</div>
+    <h2 class="reveal">Let's make<br>something move.</h2>
+    <div class="credit-links reveal">
+      <a href="mailto:bharadwajavg@gmail.com">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 6l-10 7L2 6"/></svg>
+        bharadwajavg@gmail.com
+      </a>
+      <a href="https://www.linkedin.com/in/bharadwaj-kondaveti-2b468a117/" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="3"/><line x1="7" y1="10" x2="7" y2="17"/><circle cx="7" cy="6.5" r="1" fill="currentColor" stroke="none"/><path d="M11 17v-4.5a2.5 2.5 0 0 1 5 0V17"/><line x1="11" y1="10" x2="11" y2="10.5"/></svg>
+        LinkedIn
+      </a>
+      <a href="https://www.behance.net/bharadwajakondaveti" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6h7a3 3 0 0 1 0 6H2z"/><path d="M2 12h7.5a3.2 3.2 0 0 1 0 6H2z"/><path d="M15 9h7"/><path d="M14.5 15.5a4 4 0 0 0 7.8-1.3c0-2.2-1.8-4-4-4-2.1 0-3.8 1.6-4 3.7"/></svg>
+        Behance
+      </a>
+      <a href="https://www.instagram.com/bharadwaz__/" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4.5"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+        Instagram
+      </a>
+    </div>
+
+    <div class="resume-row reveal">
+      <a href="Bharadwaj_Kondaveti_Resume.pdf" download class="resume-btn">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 19h16"/></svg>
+        Resume
+      </a>
+    </div>
+
+    <p class="contact-note reveal">A quick note: I've completed far more graphic and motion work than shown here. To keep this site focused — and respect client confidentiality — I've included just a handful of representative projects. More is available on request.</p>
+  </div>
+</section>
+
+<footer>
+  <span>© 2026 BHARADWAJ KONDAVETI</span>
+  <span>END OF REEL</span>
+</footer>
+
+<!-- ===== CHATBOT WIDGET ===== -->
+<button class="chatbot-toggle" id="chatbotToggle" aria-label="Chat with Bharadwaj's assistant">
+  <span class="ping"></span>
+  <svg viewBox="0 0 24 24" fill="none" stroke="#0b0b0d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="4" y="8" width="16" height="12" rx="3"/>
+    <circle cx="9" cy="14" r="1.4" fill="#0b0b0d" stroke="none"/>
+    <circle cx="15" cy="14" r="1.4" fill="#0b0b0d" stroke="none"/>
+    <path d="M12 8V4"/>
+    <circle cx="12" cy="3" r="1.2" fill="#0b0b0d" stroke="none"/>
+    <path d="M4 12H2"/><path d="M22 12h-2"/>
+  </svg>
+</button>
+
+<div class="chatbot-panel" id="chatbotPanel">
+  <div class="chatbot-header">
+    <div class="chatbot-avatar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#0b0b0d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="4" y="8" width="16" height="12" rx="3"/>
+        <circle cx="9" cy="14" r="1.4" fill="#0b0b0d" stroke="none"/>
+        <circle cx="15" cy="14" r="1.4" fill="#0b0b0d" stroke="none"/>
+        <path d="M12 8V4"/><circle cx="12" cy="3" r="1.2" fill="#0b0b0d" stroke="none"/>
+      </svg>
+    </div>
+    <div>
+      <div class="chatbot-name">Ask Bharadwaj</div>
+      <div class="chatbot-status">Online now</div>
+    </div>
+    <button class="chatbot-close" id="chatbotClose" aria-label="Close chat">✕</button>
+  </div>
+  <div class="chatbot-messages" id="chatbotMessages"></div>
+  <div class="chatbot-input-row">
+    <input id="chatbotInput" type="text" placeholder="Ask about my work, tools, or how to hire me…" autocomplete="off">
+    <button id="chatbotSend" aria-label="Send message">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#0b0b0d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7Z"/></svg>
+    </button>
+  </div>
+</div>
+
+<script>
+  function imgFallback(img){
+    if(!img.dataset.triedPng){
+      img.dataset.triedPng = '1';
+      img.src = img.src.replace(/\.jpg$/i, '.png');
+    } else {
+      img.style.display = 'none';
+    }
+  }
+
+  // Opens the given YouTube video directly on YouTube in a new tab.
+  function playVideo(videoId){
+    if(!videoId) return;
+    window.open('https://www.youtube.com/watch?v=' + videoId, '_blank', 'noopener');
+  }
+
+  const fill = document.getElementById('scrubFill');
+  const tcOut = document.getElementById('tcOut');
+  const totalSeconds = 3*60 + 42;
+
+  function fmt(totalSeconds){
+    const m = String(Math.floor(totalSeconds/60)).padStart(2,'0');
+    const s = String(Math.floor(totalSeconds%60)).padStart(2,'0');
+    return `${m}:${s}:00`;
+  }
+
+  function onScroll(){
+    const doc = document.documentElement;
+    const pct = Math.min(1, window.scrollY / (doc.scrollHeight - window.innerHeight));
+    fill.style.width = (pct*100) + '%';
+    tcOut.textContent = fmt(pct*totalSeconds);
+  }
+  document.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+
+  const scrollCue = document.querySelector('.scroll-cue');
+  const endSection = document.getElementById('contact');
+  const cueObserver = new IntersectionObserver((entries)=>{
+    entries.forEach(entry=>{
+      if(entry.isIntersecting){
+        scrollCue.style.opacity = '0';
+        scrollCue.style.pointerEvents = 'none';
+      } else {
+        scrollCue.style.opacity = '1';
+        scrollCue.style.pointerEvents = 'auto';
+      }
+    });
+  }, {threshold:0.2});
+  cueObserver.observe(endSection);
+
+  // Scroll-reveal
+  (function(){
+    const groups = {};
+    document.querySelectorAll('.reveal').forEach(el=>{
+      const parentKey = el.parentElement ? el.parentElement.className + (el.parentElement.id||'') : 'root';
+      groups[parentKey] = groups[parentKey] || [];
+      groups[parentKey].push(el);
+    });
+    Object.values(groups).forEach(list=>{
+      list.forEach((el,i)=>{ el.style.transitionDelay = Math.min(i*80, 320) + 'ms'; });
+    });
+    const io = new IntersectionObserver((entries)=>{
+      entries.forEach(entry=>{
+        if(entry.isIntersecting){
+          entry.target.classList.add('is-visible');
+          io.unobserve(entry.target);
+        }
+      });
+    }, {threshold:0.12, rootMargin:'0px 0px -40px 0px'});
+    document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+  })();
+
+  // Subtle tilt on work thumbnails toward the cursor
+  (function(){
+    if(window.matchMedia('(hover: none)').matches) return;
+    document.querySelectorAll('.frame-thumb').forEach(el=>{
+      el.addEventListener('mousemove', (e)=>{
+        const r = el.getBoundingClientRect();
+        const x = (e.clientX - r.left)/r.width - 0.5;
+        const y = (e.clientY - r.top)/r.height - 0.5;
+        el.style.transform = `perspective(600px) rotateX(${(-y*6).toFixed(2)}deg) rotateY(${(x*8).toFixed(2)}deg) scale(1.035)`;
+      });
+      el.addEventListener('mouseleave', ()=>{ el.style.transform = ''; });
+    });
+  })();
+
+  // Gravity dots in the hero
+  (function(){
+    const canvas = document.getElementById('dotsCanvas');
+    const ctx = canvas.getContext('2d');
+    const hero = document.querySelector('.hero');
+    let w, h, particles = [];
+    const DOT_COLOR = 'rgba(232,163,61,0.6)';
+    const COUNT = 46;
+    const mouse = {x:-9999, y:-9999};
+
+    function resize(){ w = canvas.width = hero.offsetWidth; h = canvas.height = hero.offsetHeight; }
+
+    function makeParticles(){
+      particles = [];
+      for(let i=0;i<COUNT;i++){
+        const baseX = Math.random()*w; const baseY = Math.random()*h;
+        particles.push({ x:baseX, y:baseY, baseX, baseY, vx:0, vy:0, r: 1.4 + Math.random()*2.2 });
+      }
+      const rightZoneStart = w*0.5;
+      const extra = Math.round(COUNT*0.5);
+      for(let i=0;i<extra;i++){
+        const baseX = rightZoneStart + Math.random()*(w-rightZoneStart); const baseY = Math.random()*h;
+        particles.push({ x:baseX, y:baseY, baseX, baseY, vx:0, vy:0, r: 1.4 + Math.random()*2.2 });
+      }
+    }
+
+    function step(){
+      ctx.clearRect(0,0,w,h);
+      for(const p of particles){
+        const dx = mouse.x - p.x; const dy = mouse.y - p.y;
+        const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+        if(dist < 180){
+          const pull = (1 - dist/180) * 0.55;
+          p.vx += (dx/dist) * pull; p.vy += (dy/dist) * pull;
+        }
+        p.vx += (p.baseX - p.x) * 0.004; p.vy += (p.baseY - p.y) * 0.004;
+        p.vx *= 0.9; p.vy *= 0.9; p.x += p.vx; p.y += p.vy;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fillStyle = DOT_COLOR; ctx.fill();
+      }
+      requestAnimationFrame(step);
+    }
+
+    window.addEventListener('mousemove', (e)=>{
+      const rect = hero.getBoundingClientRect();
+      mouse.x = e.clientX - rect.left; mouse.y = e.clientY - rect.top;
+    }, {passive:true});
+    window.addEventListener('mouseleave', ()=>{ mouse.x = -9999; mouse.y = -9999; });
+    window.addEventListener('resize', ()=>{ resize(); });
+
+    function fadeOnScroll(){
+      const heroHeight = hero.offsetHeight;
+      const pct = Math.min(1, Math.max(0, window.scrollY / (heroHeight*0.8)));
+      canvas.style.opacity = String(1 - pct);
+    }
+    document.addEventListener('scroll', fadeOnScroll, {passive:true});
+
+    resize(); makeParticles(); step(); fadeOnScroll();
+  })();
+
+  // Cinematic spotlight in the last section
+  (function(){
+    const section = document.getElementById('contact');
+    const spotlight = document.getElementById('spotlight');
+    section.addEventListener('mousemove', (e)=>{
+      const rect = section.getBoundingClientRect();
+      const x = e.clientX - rect.left; const y = e.clientY - rect.top;
+      spotlight.style.left = x + 'px'; spotlight.style.top = y + 'px'; spotlight.style.opacity = '1';
+    }, {passive:true});
+    section.addEventListener('mouseleave', ()=>{ spotlight.style.opacity = '0'; });
+  })();
+
+  // Custom cursor: glow + ring + trail
+  (function(){
+    if(window.matchMedia('(hover: none), (max-width: 900px)').matches) return;
+    const glow = document.getElementById('cursorGlow');
+    const ring = document.getElementById('cursorRing');
+    let mouseX = window.innerWidth/2, mouseY = window.innerHeight/2;
+    let glowX = mouseX, glowY = mouseY;
+    const trail = []; const TRAIL_MAX = 10;
+    let lastSpawnX = mouseX, lastSpawnY = mouseY;
+
+    window.addEventListener('mousemove', (e)=>{
+      mouseX = e.clientX; mouseY = e.clientY;
+      ring.style.transform = `translate(${mouseX}px, ${mouseY}px) translate(-50%,-50%)`;
+      const dx = mouseX - lastSpawnX, dy = mouseY - lastSpawnY;
+      if(Math.sqrt(dx*dx + dy*dy) > 14){
+        lastSpawnX = mouseX; lastSpawnY = mouseY;
+        const dot = document.createElement('div');
+        dot.className = 'cursor-dot';
+        document.body.appendChild(dot);
+        dot.style.transform = `translate(${mouseX}px, ${mouseY}px) translate(-50%,-50%)`;
+        trail.push(dot);
+        if(trail.length > TRAIL_MAX){ const old = trail.shift(); old.remove(); }
+        requestAnimationFrame(()=>{
+          dot.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+          dot.style.opacity = '0'; dot.style.transform += ' scale(0.3)';
+        });
+        setTimeout(()=>{ dot.remove(); const i = trail.indexOf(dot); if(i>-1) trail.splice(i,1); }, 650);
+      }
+    }, {passive:true});
+
+    document.addEventListener('mouseover', (e)=>{
+      if(e.target.closest('a, .frame, .frame-thumb, button, [role="button"]')) ring.classList.add('is-active');
+    });
+    document.addEventListener('mouseout', (e)=>{
+      if(e.target.closest('a, .frame, .frame-thumb, button, [role="button"]')) ring.classList.remove('is-active');
+    });
+
+    function tick(){
+      glowX += (mouseX - glowX) * 0.09; glowY += (mouseY - glowY) * 0.09;
+      glow.style.transform = `translate(${glowX}px, ${glowY}px) translate(-50%,-50%)`;
+      requestAnimationFrame(tick);
+    }
+    tick();
+  })();
+
+  // ===== AI CHATBOT: "Ask Bharadwaj" =====
+  (function(){
+    const toggle = document.getElementById('chatbotToggle');
+    const panel = document.getElementById('chatbotPanel');
+    const closeBtn = document.getElementById('chatbotClose');
+    const messages = document.getElementById('chatbotMessages');
+    const input = document.getElementById('chatbotInput');
+    const sendBtn = document.getElementById('chatbotSend');
+    let opened = false;
+
+    const KB = [
+      { keys:['hi','hello','hey','namaste','hii','helo'],
+        a:"Hey! I'm an assistant trained on Bharadwaj's portfolio. Ask me about his work, the tools he uses, his background, or how to get in touch.",
+        suggest:['What do you do?','Show me your work','How can I hire you?'] },
+      { keys:['who are you','about you','about yourself','yourself','who is bharadwaj','introduce'],
+        a:"Bharadwaj Kondaveti is a Senior Visual Designer based in Hyderabad. He works at the intersection of traditional motion design and AI-driven video production — a BFA graduate with years of experience across brand identity, illustration, and motion.",
+        suggest:['What tools do you use?','Show me your projects','Where are you based?'] },
+      { keys:['what do you do','job','role','profession','work as','designer'],
+        a:"He's a motion & AI video designer. Day-to-day work spans illustration, motion graphics, and directing AI-generated video — everything from brand showreels to fully AI-composited ad films.",
+        suggest:['What AI tools do you use?','Any recent projects?'] },
+      { keys:['tools','software','skills','use','illustrator','photoshop','after effects','premiere','blender','figma','canva'],
+        a:"His kit breaks into three areas — Design & Illustration: Illustrator, Photoshop, Figma, Canva. Motion & 3D: After Effects, Premiere Pro, Blender. AI Video Generation: Firefly, Higgsfield, and Veo.",
+        suggest:['Tell me about AI video work','Show me your projects'] },
+      { keys:['ai','firefly','higgsfield','veo','ai video','ai generated','generative'],
+        a:"AI video is a core part of his practice now. A good example is the TATA Nexon ad — a fully AI-generated automotive spot, directed and composited entirely through generative tools like Firefly and Veo, then finished in After Effects.",
+        suggest:['Show me more projects','What about traditional motion work?'] },
+      { keys:['project','projects','work','portfolio','reel','showreel','video','videos','case study'],
+        a:"A few highlights from the reel: CYBAGE (a full creative showreel spanning 2D/3D/illustration/motion), TATA Nexon (fully AI-generated auto ad), WPP (illustrated invoice-processing sales kit), a UX capabilities showreel, and Toppr School OS. Click any thumbnail in the 'Cuts from the Reel' section above to watch it on YouTube.",
+        suggest:['Tell me about the TATA Nexon project','What about CYBAGE?'] },
+      { keys:['cybage'],
+        a:"CYBAGE was a full creative services showreel — spanning 2D, 3D, illustration, and motion. Flyers, posters, decks, and everything in between, all pulled into one reel. Built with Illustrator, Photoshop, After Effects, and Premiere Pro.",
+        suggest:['Tell me about TATA Nexon','Show me WPP project'] },
+      { keys:['tata','nexon'],
+        a:"TATA Nexon — AI Video Ad was a fully AI-generated automotive ad, directed and composited entirely through generative video tools like Firefly and Veo, finished off in After Effects.",
+        suggest:['What about WPP?','Any UX design work?'] },
+      { keys:['wpp'],
+        a:"The WPP project was an Invoice Processing Sales Kit — illustrated visuals and motion graphics built to bring an enterprise sales kit to life, done in Illustrator and After Effects.",
+        suggest:['Tell me about the UX showreel','Toppr project?'] },
+      { keys:['ux','ux showreel','ux capabilities'],
+        a:"The UX Showreel is a reel of UX design work, mapped through workflow visuals and edited into a clear, guided narrative — built with Illustrator, Photoshop, After Effects, and Premiere Pro.",
+        suggest:['Toppr project?','What about CYBAGE?'] },
+      { keys:['toppr','school os'],
+        a:"Toppr School OS involved custom illustrations brought to life in After Effects, cut together with smooth, considered transitions.",
+        suggest:['Show me all projects','What tools were used?'] },
+      { keys:['experience','years','background','bfa','education','qualification','degree'],
+        a:"Bharadwaj holds a Bachelor of Fine Arts (BFA) and has spent his career across brand identity, illustration, and motion design — more recently focused on AI-driven video production.",
+        suggest:['Where are you based?','What do you specialize in now?'] },
+      { keys:['where','location','based','city','hyderabad','address'],
+        a:"He's based in Hyderabad, India.",
+        suggest:['How can I contact you?','What do you work on?'] },
+      { keys:['contact','email','reach','hire','hiring','freelance','available','rate','price','cost','budget','quote'],
+        a:"Best way to reach him is by email: bharadwajavg@gmail.com. He's also on LinkedIn, Behance, and Instagram — links are in the 'Roll Credits' section at the bottom of this page. For rates and availability, email directly with project details.",
+        suggest:['What is your email?','Show me your LinkedIn'] },
+      { keys:['linkedin'],
+        a:"LinkedIn: https://www.linkedin.com/in/bharadwaj-kondaveti-2b468a117/",
+        suggest:['Show me Behance','What is your email?'] },
+      { keys:['behance'],
+        a:"Behance: https://www.behance.net/bharadwajakondaveti",
+        suggest:['Show me Instagram','What is your email?'] },
+      { keys:['instagram','insta'],
+        a:"Instagram: https://www.instagram.com/bharadwaz__/",
+        suggest:['Show me LinkedIn','What is your email?'] },
+      { keys:['resume','cv'],
+        a:"You can download the resume using the 'Resume' button in the Roll Credits section at the bottom of this page.",
+        suggest:['How can I contact you?','Tell me about your experience'] },
+      { keys:['thanks','thank you','thank','thnks','tq'],
+        a:"You're welcome! Feel free to ask anything else, or reach out directly at bharadwajavg@gmail.com.",
+        suggest:['Show me your work','What tools do you use?'] },
+      { keys:['bye','goodbye','see you'],
+        a:"Thanks for stopping by — hope to work together soon! 👋",
+        suggest:['Show me your work','How can I hire you?'] }
+    ];
+
+    const DEFAULT_SUGGEST = ['What do you do?','Show me your work','How can I hire you?'];
+
+    function getBotResponse(raw){
+      const text = raw.toLowerCase();
+      let best = null, bestScore = 0;
+      for(const entry of KB){
+        let score = 0;
+        for(const k of entry.keys){ if(text.includes(k)) score += k.split(' ').length; }
+        if(score > bestScore){ bestScore = score; best = entry; }
+      }
+      if(best) return best;
+      return {
+        a:"I don't have a canned answer for that one — but the short version: Bharadwaj is a motion & AI video designer based in Hyderabad, working across illustration, After Effects/Premiere Pro motion work, and AI-generated video (Firefly, Higgsfield, Veo). For anything specific, email bharadwajavg@gmail.com directly.",
+        suggest: DEFAULT_SUGGEST
+      };
+    }
+
+    function scrollToBottom(){ messages.scrollTop = messages.scrollHeight; }
+
+    function addMessage(text, who){
+      const div = document.createElement('div');
+      div.className = 'chat-msg ' + who;
+      div.innerHTML = text.replace(/(bharadwajavg@gmail\.com)/g, '<a href="mailto:$1">$1</a>')
+                           .replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+      messages.appendChild(div);
+      scrollToBottom();
+      return div;
+    }
+
+    function addSuggestions(list){
+      if(!list || !list.length) return;
+      const wrap = document.createElement('div');
+      wrap.className = 'chat-suggestions';
+      list.forEach(s=>{
+        const btn = document.createElement('button');
+        btn.className = 'chat-suggestion-btn';
+        btn.textContent = s;
+        btn.onclick = ()=>{ input.value = s; handleSend(); };
+        wrap.appendChild(btn);
+      });
+      messages.appendChild(wrap);
+      scrollToBottom();
+    }
+
+    function showTyping(){
+      const div = document.createElement('div');
+      div.className = 'chat-msg bot';
+      div.id = 'typingIndicator';
+      div.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+      messages.appendChild(div);
+      scrollToBottom();
+      return div;
+    }
+
+    function handleSend(){
+      const val = input.value.trim();
+      if(!val) return;
+      addMessage(val, 'user');
+      input.value = '';
+      const typing = showTyping();
+      const delay = 500 + Math.random()*500;
+      setTimeout(()=>{
+        typing.remove();
+        const res = getBotResponse(val);
+        addMessage(res.a, 'bot');
+        addSuggestions(res.suggest);
+      }, delay);
+    }
+
+    sendBtn.addEventListener('click', handleSend);
+    input.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') handleSend(); });
+
+    function openChat(){
+      panel.classList.add('is-open');
+      opened = true;
+      if(!messages.dataset.greeted){
+        messages.dataset.greeted = '1';
+        const typing = showTyping();
+        setTimeout(()=>{
+          typing.remove();
+          addMessage("Hi, I'm an assistant trained on Bharadwaj's portfolio — ask me about his work, tools, background, or how to reach him!", 'bot');
+          addSuggestions(['What do you do?','Show me your work','How can I hire you?']);
+        }, 600);
+      }
+      setTimeout(()=>input.focus(), 350);
+    }
+    function closeChat(){ panel.classList.remove('is-open'); }
+
+    toggle.addEventListener('click', ()=>{ opened ? closeChat() : openChat(); if(!opened) opened = true; });
+    closeBtn.addEventListener('click', closeChat);
+    document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') closeChat(); });
+  })();
+</script>
+
+</body>
+</html>
