@@ -134,6 +134,60 @@
   .design-card:hover img{transform:scale(1.06);}
   .design-card.wide{width:380px; aspect-ratio:16/9;}
   .design-card span{ position:relative; z-index:1; padding:16px; font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--text); background:linear-gradient(to top, rgba(0,0,0,0.55), transparent); width:100%; }
+
+  .more-projects-link{
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    margin:36px auto 0;
+    width:fit-content;
+    text-align:center;
+    font-family:'IBM Plex Mono', monospace; font-size:13px; letter-spacing:0.03em;
+    color:var(--text-dim); text-decoration:none;
+    border-bottom:1px solid var(--line);
+    padding-bottom:4px;
+    transition:color 0.25s ease, border-color 0.25s ease;
+  }
+  .more-projects-link:hover{color:var(--accent); border-color:var(--accent);}
+
+  /* Fullscreen lightbox for static designs */
+  .lightbox{
+    position:fixed; inset:0; z-index:3000;
+    background:rgba(6,6,7,0.94);
+    display:none; align-items:center; justify-content:center;
+    padding:60px 90px;
+  }
+  .lightbox.active{display:flex;}
+  .lightbox img{
+    max-width:100%; max-height:100%;
+    object-fit:contain;
+    border-radius:4px;
+    box-shadow:0 20px 60px rgba(0,0,0,0.6);
+  }
+  .lightbox-caption{
+    position:absolute; bottom:28px; left:0; right:0; text-align:center;
+    font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:0.05em;
+    color:var(--text-dim);
+  }
+  .lightbox-close, .lightbox-arrow{
+    position:absolute;
+    background:rgba(255,255,255,0.06);
+    border:1px solid var(--line);
+    color:var(--text);
+    width:46px; height:46px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    transition:all 0.25s ease;
+  }
+  .lightbox-close:hover, .lightbox-arrow:hover{background:var(--accent); border-color:var(--accent); color:#0b0b0d;}
+  .lightbox-close{top:24px; right:24px;}
+  .lightbox-arrow.prev{left:24px; top:50%; transform:translateY(-50%);}
+  .lightbox-arrow.next{right:24px; top:50%; transform:translateY(-50%);}
+  @media (max-width:700px){
+    .lightbox{padding:70px 16px;}
+    .lightbox-close{top:14px; right:14px; width:38px; height:38px;}
+    .lightbox-arrow{width:38px; height:38px;}
+    .lightbox-arrow.prev{left:8px;}
+    .lightbox-arrow.next{right:8px;}
+  }
   @keyframes scrollX{from{transform:translateX(0);} to{transform:translateX(-50%);}}
   @media (prefers-reduced-motion: reduce){ .marquee-track{animation:none; overflow-x:auto;} }
 
@@ -390,6 +444,12 @@
       <div class="design-card wide"><img src="VFX space.jpg" alt="VFX space" onerror="imgFallback(this)"><span>VFX space</span></div>
     </div>
   </div>
+
+  <div class="container" style="text-align:center;">
+    <a href="https://www.behance.net/bharadwajakondaveti" target="_blank" rel="noopener" class="more-projects-link">
+      To check more projects, click here →
+    </a>
+  </div>
 </section>
 
 <section id="kit" style="padding-top:80px;">
@@ -509,6 +569,20 @@
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#0b0b0d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7Z"/></svg>
     </button>
   </div>
+</div>
+
+<div class="lightbox" id="lightbox">
+  <button class="lightbox-close" id="lightboxClose" aria-label="Close">
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="4" x2="20" y2="20"/><line x1="20" y1="4" x2="4" y2="20"/></svg>
+  </button>
+  <button class="lightbox-arrow prev" id="lightboxPrev" aria-label="Previous">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+  </button>
+  <img id="lightboxImg" src="" alt="">
+  <button class="lightbox-arrow next" id="lightboxNext" aria-label="Next">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+  </button>
+  <div class="lightbox-caption" id="lightboxCaption"></div>
 </div>
 
 <script>
@@ -877,6 +951,89 @@
     toggle.addEventListener('click', ()=>{ opened ? closeChat() : openChat(); if(!opened) opened = true; });
     closeBtn.addEventListener('click', closeChat);
     document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') closeChat(); });
+  })();
+</script>
+
+<script>
+  // Fullscreen lightbox for the Static Designs section
+  (function(){
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightboxImg');
+    const lightboxCaption = document.getElementById('lightboxCaption');
+    const closeBtn = document.getElementById('lightboxClose');
+    const prevBtn = document.getElementById('lightboxPrev');
+    const nextBtn = document.getElementById('lightboxNext');
+
+    let designs = [];
+    let currentIndex = 0;
+
+    function buildDesignsList(){
+      const seen = new Set();
+      designs = [];
+      document.querySelectorAll('#static .design-card').forEach(card=>{
+        const span = card.querySelector('span');
+        const img = card.querySelector('img');
+        if(!span || !img) return;
+        const title = span.textContent.trim();
+        if(!seen.has(title)){
+          seen.add(title);
+          designs.push({ title, src: img.src });
+        }
+      });
+    }
+
+    function updateLightbox(){
+      const d = designs[currentIndex];
+      if(!d) return;
+      lightboxImg.src = d.src;
+      lightboxImg.alt = d.title;
+      lightboxCaption.textContent = d.title;
+    }
+
+    function openLightbox(index){
+      buildDesignsList();
+      currentIndex = index;
+      updateLightbox();
+      lightbox.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeLightbox(){
+      lightbox.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    function navigate(dir){
+      if(designs.length === 0) return;
+      currentIndex = (currentIndex + dir + designs.length) % designs.length;
+      updateLightbox();
+    }
+
+    document.querySelectorAll('#static .design-card').forEach(card=>{
+      card.style.cursor = 'pointer';
+      card.addEventListener('click', ()=>{
+        buildDesignsList();
+        const title = card.querySelector('span').textContent.trim();
+        const idx = designs.findIndex(d=>d.title===title);
+        openLightbox(idx > -1 ? idx : 0);
+      });
+    });
+
+    closeBtn.addEventListener('click', closeLightbox);
+    prevBtn.addEventListener('click', (e)=>{ e.stopPropagation(); navigate(-1); });
+    nextBtn.addEventListener('click', (e)=>{ e.stopPropagation(); navigate(1); });
+
+    // Click outside the image (on the dark backdrop) closes it
+    lightbox.addEventListener('click', (e)=>{
+      if(e.target === lightbox){ closeLightbox(); }
+    });
+
+    document.addEventListener('keydown', (e)=>{
+      if(!lightbox.classList.contains('active')) return;
+      if(e.key === 'Escape') closeLightbox();
+      if(e.key === 'ArrowLeft') navigate(-1);
+      if(e.key === 'ArrowRight') navigate(1);
+    });
   })();
 </script>
 
